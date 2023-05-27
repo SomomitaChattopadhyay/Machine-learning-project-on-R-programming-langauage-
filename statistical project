@@ -1,0 +1,383 @@
+#####the very first glimps of the dataset#############
+view(ds_salaries)
+summary(ds_salaries)
+
+####here this a way to identify the classes or in other words the data types
+####of the various independent variable included in the dataset ##########
+
+class(experience_level)
+attach(ds_salaries)
+experience_level<-as.factor(experience_level)
+employment_type<-as.factor(employment_type)
+remote_ratio<-as.factor(remote_ratio)
+company_size<-as.factor(company_size)
+ summary(ds_salaries)
+length(as.list(unique(company_size)))
+
+####here is the method to investigate into whether the set of independent 
+##############variables got any "missing values"#########  
+
+A<-as.data.frame(colSums(is.na(ds_salaries)))
+
+attach(ds_salaries)
+install.packages("dplyr",dependencies = TRUE)
+install.packages("caTools",dependencies = TRUE)
+library(caTools)
+
+#####splitting the data into two groups-one is for training and the other is to 
+#validate the correctness of our choice for
+#the linear model to ultimately conclude upon to 
+#what extent the built linear model has the
+#potential to fit all the 
+#data-points of the given data-set with a desired level of precision#####
+
+spl<-sample.split(salary,0.7)
+train<-subset(ds_salaries,spl=TRUE)
+original<-train
+train$salary_currency
+str(ds_salaries)
+str(train)
+dim(train)
+validation<-subset(ds_salaries,spl=FALSE)
+str(validation)
+
+dim(validation)                                                                                                         
+
+####the linear_model that has been built after going through quiet a few iterations involving trials and errors####################################################################
+
+linear_mod<-lm(salary~work_year +I(experience_level=="MI")+I(experience_level=="SE")+job_title+I(salary_currency=="THB")+I(salary_currency=="HUF")+I(salary_currency=="ILS")+I(salary_currency=="INR")+I(salary_currency=="JPY")+I(salary_currency=="MXN")+
+                                                            I(salary_currency=="CHF")+I(salary_currency=="CLP")+salary_in_usd+ I(remote_ratio=="50")+
+                                                            I(company_location=="ID")+ I(company_location=="AL")+ I(company_location=="HU")+ I(company_location=="HN") +I(company_location=="CR")+
+                                                            I(company_location=="CH")+ company_size ,data=train)
+
+colnames(train)
+summary(linear_mod)
+summary(linear_mod)
+##### finding the fitted values of the predicted variables using the linear model#########
+pred<-fitted(linear_mod)
+library(car)
+library(caTools)
+
+##### test for checking autocorrelation that is to check whether the independent variables are independent
+#####of one another or in other words the error terms are correlated or not########
+durbinWatsonTest(linear_mod)
+
+### here VIF (variation inflation factor) is being used to check whether 
+###there exists multicollinearity within the independent variables###########
+     ## each of the independent variables vifs are all less than 2 (desirable)-hence
+        ##no multicollinearity is found ## 
+                                 # NOTE: the industry standard being less than 2
+vif(linear_mod)
+
+
+####MAPE(mean absolute percentage error)is a statistical tool to gauge the goodness of fit for the model as it accurately
+###lays out how far the original (observed)values of y's are from the predicted ones###############
+    ###### As the MAPE turns out to be equals to 4.59, here it can be concluded that the linear model so built is the right one to seamlessly  predict the values of salary(y)
+        #####for different values of the independent variables###### 
+                                #NOTE: The industry standard for MAPE being less than 5(pointing to the model predicts accurately)
+attach(train)
+ MAPE<-(sum(abs(salary-pred)/abs(pred))/nrow(train))*100
+ 
+####for finding out the outliers and the method of capping and flooring them##########
+plot(linear_mod)
+ W<-quantile(salary,prob=0.98,na.rm=T)
+ UCL<-W + 1.5*IQR(salary,na.rm=T)
+ train[salary>UCL,"salary"]<-UCL
+ 
+ options(scipen='10')
+train[2967,"salary"]<-UCL
+train[3647,"salary"]<-UCL
+train[2359,"salary"]<-UCL
+train[2967,""]
+quantile(train$salary)
+class(train$remote_ratio)
+app<-apply(train,2,median)
+
+
+hist(linear_model$residuals)
+
+summary(train)
+attach(ds_salaries)
+ train<-subset(train,select=c( "work_year","experience_level","job_title","salary","salary_currency","salary_in_usd", "remote_ratio", "company_location","company_size"))
+colnames(ds)
+colnames(train)
+class(salary_currency)
+class(company_location)
+
+
+#statistical tests of significance # 
+install.packages("car",dependencies= TRUE)
+library(car)
+#test of multicollinearity#
+vif(linear_model)
+ #here no value is greater than 1.7 or 2 thus we fail to conclude that there is any sort of strong correlation between the independent variables#
+library(dplyr)
+attach(train)
+pred<-fitted(linear_model)
+#Mean Absolute Percentage Error#(less than 5 percent is desirable)
+MAPE<-(sum(abs(salary-pred)/salary)/nrow(train))*100
+durbinWatsonTest(linear_mod)
+#here the p value is not less than 0.05 hence we cant reject the null hypothesis that states there is no auto-correlation #
+library(car)
+
+plot(train$residuals)
+plot(linear_model$residuals)
+plot(linear_model)
+hist(linear_model$residuals)
+plot(linear_model)
+# 2967,3647,2359 - outliers #
+q<-as.vector(quantile(train$salary,probs=0.01,na.rm = T))
+cap<-as.vector(quantile(train$salary,probs=c(0.25,0.75),na.rm =T))
+cap[1]
+cap[2]
+install.packages("Metrics",dependencies = T)
+library(Metrics)
+attach(train)
+MAPE<-mae(salary,pred)
+hist(linear_model$residuals)
+
+# the way tpo convert -1e+05 to -100000#
+options(scipen="10") 
+
+UCL<-cap[2] + 1.5*IQR(train$salary,na.rm= T)
+train[salary>UCL,"salary"]<-quantile(train$salary,probs=0.99,na.rm=T)
+train[salary<q,"salary"]<-q
+plot(train$salary,main="salary",horizontal =T,col="orange",border="black",type="box" )
+train$salary
+install.packages("tidyverse",dependencies = T)
+
+#############visualization part starts from here###################################################
+library(tidyverse)
+options(scipen="10")
+
+ds_salaries %>%
+  ggplot(aes(company_size,salary,colour = company_size ))+
+  geom_point(size=5,alpha=0.3)+
+  geom_line()+
+  labs(x="size of the company",y="salary offered",title ="relationship between company_size and salary that one gets")+
+  theme_bw()
+  
+   train1<-train
+  colnames(train1)
+
+colnames(ds_salaries)
+#relevant#
+ds_salaries %>%
+  ggplot(aes(as.factor(work_year),salary,fill=as.factor(work_year)))+
+  geom_point(size=3,alpha=0.5)+
+  geom_col()+
+  labs(x="year",y="salary",title="relationship between year and salary")+
+  theme_minimal()
+### the method to convert the result of summary(linear model) into a table format######
+library(broom)
+table<-as.data.frame(tidy(linear_mod))
+
+#validation part of it#
+linear_mod1<-lm(linear_mod<-lm(salary~work_year +I(experience_level=="MI")+I(experience_level=="SE")+job_title+I(salary_currency=="THB")+I(salary_currency=="HUF")+I(salary_currency=="ILS")+I(salary_currency=="INR")+I(salary_currency=="JPY")+I(salary_currency=="MXN")+
+                                 I(salary_currency=="CHF")+I(salary_currency=="CLP")+salary_in_usd+ I(remote_ratio=="50")+
+                                 I(company_location=="ID")+ I(company_location=="AL")+ I(company_location=="HU")+ I(company_location=="HN") +I(company_location=="CR")+
+                                 I(company_location=="CH")+ company_size ,data=validation))
+
+summary(linear_mod1)
+pred<-fitted(linear_mod1)
+library(car)
+#######autocorrelation########
+durbinWatsonTest(linear_mod1)
+attach(validation)
+#greater than 25 % is what is considered to be as a threat but if it lies between 10 to 25 %
+#its fairly ok# 
+MAPE<-(sum((abs(salary-pred)/(pred)))/
+  nrow(validation))*100
+#multicollinearity#
+vif(linear_mod1)
+plot(linear_mod1)
+options(scipen="10")
+colnames(train)
+employment_type
+library(tidyverse)
+options(scipen="10")
+############################################################################################
+#important one#
+ds_salaries%>%
+  ggplot(aes(employment_type,salary,fill=remote_ratio))+
+  geom_point()+
+  geom_bar(stat="identity")+
+ # geom_text(aes(label=salary),vjust=1.6,colour="steelblue")+
+  labs(x="types of employment",y="salary based on employment type",main="relationship")+
+  theme_minimal()
+##############################################################################################
+#important one#
+ds_salaries%>%
+  ggplot(aes(employment_type,salary,fill=remote_ratio))+
+  geom_point()+
+  geom_bar(stat="identity")+
+  facet_wrap(~remote_ratio)+
+  labs(x="types of employment",y="salary based on employment type",main="relationship")+
+  theme_minimal()
+###############################################################################################
+ds_salaries%>%
+  filter(employment_type == "FT")%>%
+  ggplot(aes(employment_type,salary,fill=remote_ratio))+
+  #geom_point()+
+  geom_bar(stat="identity")+
+ # geom_text(aes(label=salary),vjust=-13,colour="black")+
+  #coord_flip()+
+  facet_wrap(~remote_ratio)+
+  scale_fill_brewer()+
+  theme_minimal()
+options(scipen="10")
+##########################################################################################
+#an important one#
+ds_salaries%>%
+  ggplot(aes(employment_type,salary,colour=remote_ratio))+
+  geom_point(size=5,alpha=0.3)+
+  geom_line()+
+  facet_wrap(~remote_ratio)+
+  labs(x="types of employment",y="salary based on employment type",title="relationship between salary and types of employment")+
+  theme_minimal()
+############################################################################################
+colnames(train)
+attach(ds_salaries)
+experience_level
+###########################################################################################
+# another very important one#################
+ds_salaries%>%
+  filter(company_size %in% c("S","L"))%>%
+  ggplot(aes(experience_level,salary,fill=company_size))+
+  #geom_bar(stat="identity")+
+  #facet_wrap(~company_size)+
+  geom_bar(stat="identity",position=position_dodge())+
+  labs(x="level of experience",y="salary",title="relationship between salary and experience_level",
+       subtitle="disintegrated wrt company_size",colours=T)+
+  theme(plot.title=element_text(size=20,color="red"),
+       plot.subtitle=element_text(size=15,color="blue"))+
+  theme(axis.title.x = element_text(size=20,color="red"),
+        axis.title.y = element_text(size=20,color="blue"))+
+  theme(legend.text = element_text(size=10,color="red"))
+  
+  #theme(plot.title.position = element_text(size=20,color="green"))+
+ ############################################################################# 
+library(ggplot2)
+ds_salaries%>%
+  filter(salary<50000)%>%
+ filter(company_size %in% c("L","S"))%>%
+  ggplot(aes(salary),fill="company_size")+
+  geom_density(color="black",fill="pink")+
+  facet_wrap(~company_size)+
+  geom_vline(aes(xintercept=mean(salary),color="company_size"),
+            color="red",linetype="dashed",size=1.5)+
+  labs(x="salary",y="density",title="salary density",subtitle="segregated wrt small and large sized company")+
+  theme(plot.title=element_text(size=20,color="red"),
+        plot.subtitle=element_text(size=15,color="red") )+
+  theme(axis.title.x=element_text(size=15,color="red"),axis.title.y=element_text(size=15,color="red"))
+ + #scale_x_continuous(limits=c(1000,40000))
+  
+ ################################################################
+   attach(ds_salaries)
+
+  df<-as.data.frame(ds_salaries[salary<50000,"company_size"])
+df2<-as.data.frame(ds_salaries[salary<50000,"salary"])
+df$salary<-df2
+colnames(df)
+#the method to solve this error #
+df3<-as.data.frame(df[salary!="50000+",])
+
+ 
+ library(tidyverse)
+ library(forcats)
+ attach(ds_salaries)
+#####usage of the package forcats###############
+ ds_salaries%>%
+  # group_by(company_size)%>%
+   select(salary)%>%
+   count()
+ #method of sorting#(both in asc and desc order)####################
+ ds_salaries%>%
+   mutate(company_size=fct_infreq(company_size)%>%fct_rev())%>%
+    count(company_size)
+
+  #method of sorting the levels
+ A<-as.data.frame(count(ds_salaries,company_size,sort=T))
+ 
+ # application of fct_lump from forcats#########
+ds_salaries%>%
+   
+   mutate(company_size=fct_lump(company_size,n=2))%>%
+  count(company_size)
+ 
+ # grouping by the company_size#####
+ ds_salaries%>%
+   select(employment_type,company_size)%>%
+   table()
+ 
+ options(scipen="10")
+ 
+ #sorting the catagorical variable in graphs also######
+ ds_salaries%>%
+   mutate(company_size=fct_infreq(company_size)%>%fct_rev())%>%
+   ggplot(aes(company_size,salary,fill=remote_ratio))+
+   geom_bar(stat="identity")+
+   theme_minimal()
+ #####interesting one####################
+ # usage of summarise and fct_reorder2 from forcats package ########
+ ds_salaries%>%
+   group_by(company_size)%>%
+   summarise(salary_mean=mean(salary))%>%
+   mutate(company_size=fct_reorder2(company_size,company_size,salary_mean,)%>%fct_rev())%>% 
+   ggplot(aes(company_size,salary_mean,fill=company_size))+
+   geom_bar(stat="identity")+
+   theme_minimal()
+ #############################################################################
+ ds_salaries%>%
+   group_by(company_size)%>%
+   summarise(sum=sum(salary))%>%
+   mutate(company_size=fct_reorder2(company_size,sum,sum)%>%fct_rev())%>%
+   ggplot(aes(company_size,sum,fill=company_size))+
+   geom_bar(stat="identity")+
+   theme_minimal()
+ 
+   
+  # mutate(company_sizwe=fct_reorder2(company_size,salary,company_size)%>%fct_rev())%>%
+  #mutate(remote_ratio=fct_reorder2(remote_ratio,salary,salary)%>%fct_rev())%>%
+ # mutate(company_size=fct_reorder2(remote_ratio,salary,remote_ratio))%>%
+   ggplot(aes(company_size,salary,fill=remote_ratio))+
+   geom_bar(stat="identity")+
+   facet_wrap(~remote_ratio)+#,position=position_dodge())+
+  theme_minimal()
+   options(scipen="10")
+  ################visualisation of probability density function#######################
+ library(tidyverse)
+   ds_salaries%>%
+     filter(salary<=20000)%>%
+     ggplot(aes(salary,fill=company_size))+
+     geom_density(alpha=0.3,show.legend= F)+
+     facet_grid(company_size~employment_type)+
+     labs(x="probability",y="salary",title="probability density function")+
+   theme(plot.title=element_text(size=20,color="blue"))
+   
+     
+     
+   colnames(train)
+   install.packages("ggridges",dependencies = T)
+   library(ggridges)
+   ##################visualization using ggridges########
+   ds_salaries%>%
+     ggplot(aes(salary,work_year,height=salary,fill=work_year))+
+     geom_density_ridges2(stat="identity",scale=5)+
+   theme_minimal()
+   
+     ######### this is another important one###################
+    ds_salaries%>%
+    filter(salary<20000)%>%
+      ggplot(aes(salary,remote_ratio,group=remote_ratio,fill=remote_ratio))+
+      geom_density_ridges(scale=2,alpha=0.5,quantile_lines=T,quantile_fun=function(x,...)mean(x))+
+      labs(x="salary",y="remote_ratio",title="relationship btw remote_ratio and salary",subtitle="represented through ridges catagorized by company_size")+
+       theme(plot.title=element_text(size=20,color="red"))+
+    facet_wrap(~company_size)#+scale_fill_brewer(palette='reds')
+
+
+
+    
+
+
+
